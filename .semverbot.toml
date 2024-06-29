@@ -1,4 +1,4 @@
-mode = "git-commit"
+mode = "git-branch"
 
 [git]
 
@@ -20,5 +20,5 @@ major = ["release"]
 delimiters = "/"
 
 [modes.git-commit]
-delimiters = "[]"
+delimiters = " "
 
