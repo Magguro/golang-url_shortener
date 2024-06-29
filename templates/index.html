@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            border: 1px solid #ccc;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        form {
+            margin-bottom: 1em;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 0.5em;
+            margin-bottom: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 0.5em 1em;
+            border: none;
+            border-radius: 4px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+        }
+        th, td {
+            padding: 0.75em;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .delete-button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+        .delete-confirm {
+            display: none;
+            margin-left: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL Shortener</h1>
+        <form hx-post="/shortly/shorten" hx-target="#result" hx-swap="innerHTML">
+            <label for="url">Enter URL:</label>
+            <input type="text" id="url" name="url" required>
+            <button type="submit">Shorten</button>
+        </form>
+        <div id="result"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Original URL</th>
+                    <th>Shortened URL</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="url-list">
+                {{range .URLs}}
+                <tr>
+                    <td>{{.OriginalURL}}</td>
+                    <td><a href="{{.ShortURL}}" target="_blank">{{.ShortURL}}</a></td>
+                    <td>
+                        <button class="delete-button" hx-get="/shortly/delete/{{.ShortURL}}">Delete</button>
+                        <div class="delete-confirm">
+                            <p>Are you sure you want to delete this URL?</p>
+                            <button class="confirm-delete" hx-delete="/shortly/delete/{{.ShortURL}}" hx-target="this">Yes, Delete</button>
+                            <button class="cancel-delete">Cancel</button>
+                        </div>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="3">No URLs shortened yet</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteButtons = document.querySelectorAll('.delete-button');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const deleteConfirm = button.nextElementSibling;
+                    deleteConfirm.style.display = 'block';
+
+                    const confirmButton = deleteConfirm.querySelector('.confirm-delete');
+                    confirmButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        const urlTableRow = button.closest('tr');
+                        fetch(confirmButton.getAttribute('hx-delete'), { method: 'DELETE' })
+                            .then(response => {
+                                if (response.ok) {
+                                    urlTableRow.remove();
+                                } else {
+                                    console.error('Failed to delete URL');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error deleting URL:', error);
+                            });
+                    });
+
+                    const cancelButton = deleteConfirm.querySelector('.cancel-delete');
+                    cancelButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        deleteConfirm.style.display = 'none';
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
